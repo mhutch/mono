@@ -7,10 +7,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -39,7 +39,7 @@ namespace Cairo
 		Out,
 		Part,
 	}
-		
+
 	public class Region : IDisposable {
 
 		IntPtr handle;
@@ -47,11 +47,7 @@ namespace Cairo
 			get { return handle; }
 		}
 
-		~Region ()
-		{
-			Console.WriteLine ("Cairo.Region finalizer reached - developer must dispose regions manually to avoid leakage due to thread-safety concerns.");
-		}
-
+		[Obsolete]
 		public Region (IntPtr handle) : this (handle, false) {}
 
 		public Region (IntPtr handle, bool owned)
@@ -59,11 +55,12 @@ namespace Cairo
 			this.handle = handle;
 			if (!owned)
 				NativeMethods.cairo_region_reference (handle);
+			if (CairoDebug.Enabled)
+				CairoDebug.OnAllocated (handle);
 		}
 
-		public Region ()
+		public Region () : this (NativeMethods.cairo_region_create () , true)
 		{
-			handle = NativeMethods.cairo_region_create ();
 		}
 
 		public Region (RectangleInt rect)
@@ -81,12 +78,27 @@ namespace Cairo
 			return new Region (NativeMethods.cairo_region_copy (Handle), true);
 		}
 
+		~Region ()
+		{
+			Dispose (false);
+		}
+
 		public void Dispose ()
 		{
-			if (handle != IntPtr.Zero)
-				NativeMethods.cairo_region_destroy (Handle);
-			handle = IntPtr.Zero;
+			Dispose (true);
 			GC.SuppressFinalize (this);
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			if (!disposing || CairoDebug.Enabled)
+				CairoDebug.OnDisposed<Region> (handle, disposing);
+
+			if (!disposing|| handle == IntPtr.Zero)
+				return;
+
+			NativeMethods.cairo_region_destroy (Handle);
+			handle = IntPtr.Zero;
 		}
 
 		public override bool Equals (object obj)
