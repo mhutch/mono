@@ -29,3 +29,6 @@
 [submodule "external/nunit-lite"]
 	path = external/nunit-lite
 	url = git://github.com/mono/NUnitLite.git
+[submodule "external/corefx"]
+	path = external/corefx
+	url = git@github.com:dotnet/corefx.git
